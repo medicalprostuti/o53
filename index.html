@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ২য় অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "তড়িৎ বিশ্লেষণকালে কোন আয়নটি আগে চার্জমুক্ত হবে?",
+          options: {
+            A: "Br⁻",
+            B: "NO₃⁻",
+            C: "Cl⁻",
+            D: "OH⁻",
+          },
+          correct: "D",
+          explanation:
+            "<p>অ্যানায়নগুলোর চার্জমুক্ত হওয়ার প্রবণতা তাদের জারণ বিভবের মানের উপর নির্ভর করে। জারণ বিভব যত বেশি হয়, আয়নটি তত সহজে ইলেকট্রন ত্যাগ করে চার্জমুক্ত হয়। সক্রিয়তা সিরিজের ক্রম অনুসারে, OH<sup>-</sup> (হাইড্রক্সাইড আয়ন) এর জারণ বিভব Br<sup>-</sup>, NO₃<sup>-</sup> এবং Cl<sup>-</sup> এর চেয়ে বেশি। তাই, তড়িৎ বিশ্লেষণকালে OH<sup>-</sup> আয়নটি সবার আগে জারিত হয়ে চার্জমুক্ত হবে এবং অক্সিজেন গ্যাস উৎপন্ন করবে।</p>",
+        },
+        {
+          id: 2,
+          question: "সক্রিয়তা সিরিজে কোনটির অবস্থান ওপরে?",
+          options: {
+            A: "Pb",
+            B: "Cu",
+            C: "Ag",
+            D: "Ca",
+          },
+          correct: "D",
+          explanation:
+            "<p>ধাতুসমূহের তড়িৎ রাসায়নিক সক্রিয়তা সিরিজে যে ধাতু যত উপরে থাকে, সেটি তত বেশি সক্রিয়। প্রদত্ত অপশনগুলোর মধ্যে, ক্যালসিয়াম (Ca) এর সক্রিয়তা সবচেয়ে বেশি। সক্রিয়তা সিরিজের ক্রম হলো: Ca > Pb > Cu > Ag। ক্যালসিয়াম সহজেই ইলেকট্রন ত্যাগ করতে পারে এবং তীব্রভাবে বিক্রিয়া করে।</p>",
+        },
+        {
+          id: 3,
+          question: "তড়িৎ রাসায়নিক সক্রিয়তা সিরিজে নিচের কোনটি সঠিক?",
+          options: {
+            A: "Al > Ni",
+            B: "Zn > Mg",
+            C: "Fe > Na",
+            D: "Cu > Sn",
+          },
+          correct: "A",
+          explanation:
+            "<p>তড়িৎ রাসায়নিক সক্রিয়তা সিরিজে, যে ধাতু যত উপরে থাকে, সেটি তত বেশি সক্রিয়।<br>A) Al (অ্যালুমিনিয়াম) Ni (নিকেল) এর চেয়ে বেশি সক্রিয়। এই ক্রমটি সঠিক।<br>B) Mg (ম্যাগনেসিয়াম) Zn (জিঙ্ক) এর চেয়ে বেশি সক্রিয়, তাই Zn > Mg ভুল।<br>C) Na (সোডিয়াম) Fe (লোহা) এর চেয়ে বেশি সক্রিয়, তাই Fe > Na ভুল।<br>D) Sn (টিন) Cu (কপার) এর চেয়ে বেশি সক্রিয়, তাই Cu > Sn ভুল।</p>",
+        },
+        {
+          id: 4,
+          question: "নিচের কোনটি কম বিক্রিয়াশীল ধাতু?",
+          options: {
+            A: "Chromium",
+            B: "Silver",
+            C: "Platinum",
+            D: "Gold",
+          },
+          correct: "D",
+          explanation:
+            "<p>ধাতুসমূহের সক্রিয়তা সিরিজে যে ধাতু যত নিচে থাকে, সেটি তত কম বিক্রিয়াশীল। প্রদত্ত ধাতুগুলোর মধ্যে, গোল্ড (স্বর্ণ) এর সক্রিয়তা সবচেয়ে কম। এটি খুব সহজে রাসায়নিক বিক্রিয়া করে না এবং তাই এটিকে 'নোবেল ধাতু' বলা হয়। প্ল্যাটিনামও একটি নোবেল ধাতু হলেও, গোল্ডের চেয়ে বেশি সক্রিয়। ক্রোমিয়াম এবং সিলভার গোল্ডের চেয়ে বেশি সক্রিয়।</p>",
+        },
+        {
+          id: 5,
+          question: "তড়িৎ বিশ্লেষণকালে কোনটি আগে চার্জমুক্ত হবে?",
+          options: {
+            A: "Cu²⁺",
+            B: "H⁺",
+            C: "Au³⁺",
+            D: "Ag⁺",
+          },
+          correct: "C",
+          explanation:
+            "<p>তড়িৎ বিশ্লেষণকালে ক্যাথোডে ক্যাটায়নগুলোর চার্জমুক্ত হওয়ার প্রবণতা তাদের বিজারণ বিভবের মানের উপর নির্ভর করে। যার বিজারণ বিভব যত বেশি, সেটি তত সহজে ইলেকট্রন গ্রহণ করে চার্জমুক্ত হয়। প্রদত্ত আয়নগুলোর বিজারণ বিভবের ক্রম হলো:<br>Au<sup>3+</sup> (+1.50 V) > Ag<sup>+</sup> (+0.80 V) > Cu<sup>2+</sup> (+0.34 V) > H<sup>+</sup> (0.00 V)<br>সুতরাং, Au<sup>3+</sup> এর বিজারণ বিভব সবচেয়ে বেশি হওয়ায় এটি সবার আগে চার্জমুক্ত হবে।</p>",
+        },
+        {
+          id: 6,
+          question: "সক্রিয়তা সিরিজে কোন মৌলটি সবার উপরে অবস্থিত?",
+          options: {
+            A: "Al",
+            B: "Mg",
+            C: "Pb",
+            D: "Ag",
+          },
+          correct: "B",
+          explanation:
+            "<p>তড়িৎ রাসায়নিক সক্রিয়তা সিরিজে, যে মৌল যত উপরে থাকে, সেটি তত বেশি সক্রিয়। প্রদত্ত মৌলগুলোর মধ্যে, ম্যাগনেসিয়াম (Mg) এর সক্রিয়তা সবচেয়ে বেশি এবং এটি সক্রিয়তা সিরিজে সবার উপরে অবস্থিত। সক্রিয়তা ক্রম হলো: Mg > Al > Pb > Ag। ম্যাগনেসিয়াম সহজেই ইলেকট্রন ত্যাগ করে এবং তীব্র রাসায়নিক বিক্রিয়ায় অংশ নেয়।</p>",
+        },
+        {
+          id: 7,
+          question: "নিচের কোন মৌলটি তুঁতের দ্রবণ থেকে Cu কে অধঃক্ষিপ্ত করে?",
+          options: {
+            A: "Ag",
+            B: "Fe",
+            C: "Cl",
+            D: "Pt",
+          },
+          correct: "B",
+          explanation:
+            "<p>তুঁতের দ্রবণ হলো কপার সালফেট (CuSO₄) দ্রবণ। জিঙ্ক (Zn), আয়রন (Fe) বা লেড (Pb) এর মতো যে কোনো সক্রিয় ধাতু কপারের চেয়ে বেশি সক্রিয় হওয়ায় তারা কপার সালফেট দ্রবণ থেকে কপারকে প্রতিস্থাপিত করতে পারে।<br>Fe (s) + CuSO₄ (aq) → FeSO₄ (aq) + Cu (s)<br>এই বিক্রিয়ায়, আয়রন কপারকে তার লবণ দ্রবণ থেকে অধঃক্ষিপ্ত করে। Ag (রূপা) এবং Pt (প্ল্যাটিনাম) কপারের চেয়ে কম সক্রিয় হওয়ায় তারা এটি করতে পারে না।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "NaCl ও KCl দ্রবণকে তড়িৎ বিশ্লেষণ করলে ক্যাথোডে কোনটি আগে বিজারিত হয়?",
+          options: {
+            A: "Na⁺",
+            B: "K⁺",
+            C: "Na⁺, K⁺",
+            D: "কোনটিই নয়",
+          },
+          correct: "A",
+          explanation:
+            "<p>তড়িৎ বিশ্লেষণকালে ক্যাথোডে ক্যাটায়নগুলোর বিজারণ বিভব যার বেশি, সেটি আগে বিজারিত হয়। Na<sup>+</sup> এবং K<sup>+</sup> উভয়ই সক্রিয় ধাতু আয়ন। তবে, জলীয় দ্রবণে Na<sup>+</sup> (-2.71 V) এবং K<sup>+</sup> (-2.92 V) এর বিজারণ বিভব পানির (-0.83 V) চেয়ে অনেক কম। তাই Na<sup>+</sup> এবং K<sup>+</sup> বিজারিত না হয়ে পানি বিজারিত হয়ে হাইড্রোজেন গ্যাস উৎপন্ন হয়। কিন্তু প্রশ্নে প্রদত্ত অপশনগুলোর মধ্যে, সোডিয়ামের বিজারণ বিভব পটাশিয়ামের চেয়ে বেশি, তাই Na<sup>+</sup> এর বিজারণ প্রবণতা K<sup>+</sup> এর চেয়ে বেশি।</p>",
+        },
+        {
+          id: 9,
+          question:
+            "Cl⁻, I⁻ এর দ্রবণে তড়িৎ প্রবাহিত করলে অ্যানোডে কোনটি বিমুক্ত হয়?",
+          options: {
+            A: "Cl₂",
+            B: "I₂",
+            C: "Cl₂, I₂",
+            D: "কোনটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>অ্যানোডে অ্যানায়নগুলোর জারণ বিভবের মানের উপর ভিত্তি করে কোনটি আগে চার্জমুক্ত হবে তা নির্ধারিত হয়। জারণ বিভব যত বেশি হয়, আয়নটি তত সহজে জারিত হয়।<br>I<sup>-</sup> এর জারণ বিভব (+0.54 V) Cl<sup>-</sup> এর জারণ বিভবের (-1.36 V) চেয়ে বেশি। তাই, I<sup>-</sup> আয়নটি Cl<sup>-</sup> আয়নের আগে জারিত হয়ে আয়োডিন (I₂) বিমুক্ত করবে।</p>",
+        },
+        {
+          id: 10,
+          question: "ধাতুসমূহের সক্রিয়তার ক্রম অনুযায়ী কোনটি সঠিক নয়?",
+          options: {
+            A: "Li > K",
+            B: "Na > K",
+            C: "Mg > Zn",
+            D: "Cu > Ag",
+          },
+          correct: "B",
+          explanation:
+            "<p>ধাতুসমূহের সক্রিয়তা সিরিজ তাদের ইলেকট্রন ত্যাগের প্রবণতা অনুযায়ী সাজানো হয়। যে ধাতু যত বেশি সক্রিয়, সে সিরিজে তত উপরে থাকে।<br>A) লিথিয়াম (Li) পটাশিয়াম (K) এর চেয়ে বেশি সক্রিয়। (সঠিক)<br>B) পটাশিয়াম (K) সোডিয়াম (Na) এর চেয়ে বেশি সক্রিয়। তাই Na > K ক্রমটি সঠিক নয়। (ভুল)<br>C) ম্যাগনেসিয়াম (Mg) জিঙ্ক (Zn) এর চেয়ে বেশি সক্রিয়। (সঠিক)<br>D) কপার (Cu) সিলভার (Ag) এর চেয়ে বেশি সক্রিয়। (সঠিক)</p>",
+        },
+        {
+          id: 11,
+          question: "কোন মৌলটি H₂O থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে না?",
+          options: {
+            A: "Mg",
+            B: "Al",
+            C: "Mn",
+            D: "Sn",
+          },
+          correct: "D",
+          explanation:
+            "<p>যেসব ধাতু সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থান করে, তারা অ্যাসিড বা পানি থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>ম্যাগনেসিয়াম (Mg), অ্যালুমিনিয়াম (Al) এবং ম্যাঙ্গানিজ (Mn) সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থান করে এবং H₂O থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>টিন (Sn) সক্রিয়তা সিরিজে হাইড্রোজেনের সামান্য উপরে থাকলেও, এটি সাধারণ তাপমাত্রায় পানি থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে না। টিন শুধু উচ্চ তাপমাত্রায় স্টীম থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "নিম্নের ধাতুগুলির মধ্যে কোনটি জলীয় সিলভার নাইট্রেট-এ ডুবালে এর পৃষ্ঠতলে সিলভার জমা হবে না?",
+          options: {
+            A: "Cu",
+            B: "Fe",
+            C: "Pt",
+            D: "Zn",
+          },
+          correct: "C",
+          explanation:
+            "<p>জলীয় সিলভার নাইট্রেট দ্রবণ থেকে সিলভার (Ag) জমা হওয়ার জন্য ধাতুটি সিলভারের চেয়ে বেশি সক্রিয় হতে হবে। অর্থাৎ, সক্রিয়তা সিরিজে সিলভারের উপরে অবস্থান করতে হবে।<br>কপার (Cu), আয়রন (Fe) এবং জিঙ্ক (Zn) উভয়ই সিলভারের চেয়ে বেশি সক্রিয়, তাই তারা সিলভার নাইট্রেট দ্রবণ থেকে সিলভারকে প্রতিস্থাপন করে পাতগুলোর উপর সিলভার জমা করবে।<br>প্ল্যাটিনাম (Pt) সিলভারের চেয়ে কম সক্রিয় (সক্রিয়তা সিরিজে নিচে অবস্থিত), তাই এটি সিলভার নাইট্রেট দ্রবণ থেকে সিলভারকে প্রতিস্থাপন করতে পারবে না এবং এর পৃষ্ঠতলে সিলভার জমা হবে না।</p>",
+        },
+        {
+          id: 13,
+          question:
+            "Fe²⁺ / Fe³⁺ এবং Fe³⁺ / Fe²⁺ তড়িৎদ্বার দুটির প্রমাণ বিজারণ বিভবের মান যথাক্রমে 0.44V ও +0.77V। যদি Fe²⁺, Fe³⁺ কে Fe এর ব্লকে এক সাথে রাখা হয়, তবে-",
+          options: {
+            A: "Fe²⁺ এর পরিমাণ হ্রাস পাবে",
+            B: "Fe³⁺ এর পরিমাণ হ্রাস পাবে",
+            C: "Fe³⁺ এর পরিমাণ বৃদ্ধি পাবে",
+            D: "Fe²⁺ ও Fe³⁺ এর পরিমাণ অপরিবর্তিত থাকবে",
+          },
+          correct: "B",
+          explanation:
+            "<p>এখানে দেওয়া আছে: Fe<sup>2+</sup>/Fe<sup>3+</sup> এর প্রমাণ বিজারণ বিভব (Fe<sup>3+</sup> + e<sup>-</sup> → Fe<sup>2+</sup>) হল +0.77V, এবং Fe/Fe<sup>2+</sup> এর প্রমাণ বিজারণ বিভব (Fe<sup>2+</sup> + 2e<sup>-</sup> → Fe) হল -0.44V।<br>যখন Fe<sup>2+</sup> এবং Fe<sup>3+</sup> কে Fe এর ব্লকে রাখা হয়, তখন Fe ধাতু জারিত হয়ে Fe<sup>2+</sup> আয়নে পরিণত হয় এবং Fe<sup>3+</sup> আয়ন বিজারিত হয়ে Fe<sup>2+</sup> আয়নে পরিণত হয়।<br>Fe + 2Fe<sup>3+</sup> → 3Fe<sup>2+</sup><br>এই বিক্রিয়ায় Fe<sup>3+</sup> বিজারিত হয়ে Fe<sup>2+</sup> এ রূপান্তরিত হয়, ফলে Fe<sup>3+</sup> এর পরিমাণ হ্রাস পাবে।</p>",
+        },
+        {
+          id: 14,
+          question: "তামার পাত্রে নিচের কোন দ্রবণটি নিরাপদে রাখা যাবে?",
+          options: {
+            A: "AgNO₃",
+            B: "FeSO₄",
+            C: "HgSO₄ (লঘু)",
+            D: "Cl₂ পানি",
+          },
+          correct: "B",
+          explanation:
+            "<p>একটি ধাতব পাত্রে অন্য কোনো ধাতুর দ্রবণ নিরাপদে রাখার জন্য পাত্রের ধাতুটিকে দ্রবণের ধাতুর চেয়ে কম সক্রিয় হতে হবে। অর্থাৎ, সক্রিয়তা সিরিজে পাত্রের ধাতুটি দ্রবণের ধাতুর নিচে থাকতে হবে।<br>কপার (Cu) সক্রিয়তা সিরিজে আয়রন (Fe) এর চেয়ে নিচে অবস্থিত। তাই, কপার আয়রনকে তার লবণ দ্রবণ থেকে প্রতিস্থাপন করতে পারবে না।<br>অন্যদিকে, কপার সিলভার (Ag), মারকারি (Hg) এবং ক্লোরিনের (Cl₂) চেয়ে বেশি সক্রিয় বা তাদের সাথে বিক্রিয়া করে। তাই AgNO₃, HgSO₄ এবং Cl₂ পানি তামার পাত্রে রাখলে বিক্রিয়া ঘটবে। সুতরাং, FeSO₄ দ্রবণ তামার পাত্রে নিরাপদে রাখা যাবে।</p>",
+        },
+        {
+          id: 15,
+          question: "নিচের কোন ধাতুগুলো এসিড থেকে হাইড্রোজেন প্রতিস্থাপন করে?",
+          options: {
+            A: "ম্যাগনেসিয়াম",
+            B: "অ্যালুমিনিয়াম",
+            C: "আয়রন",
+            D: "মারকারি",
+          },
+          correct: "D",
+          explanation:
+            "<p>যেসব ধাতু সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থান করে, তারা অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>ম্যাগনেসিয়াম (Mg), অ্যালুমিনিয়াম (Al), এবং আয়রন (Fe) উভয়ই সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থিত। তাই, তারা অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>মারকারি (Hg) সক্রিয়তা সিরিজে হাইড্রোজেনের নিচে অবস্থিত, তাই এটি অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে না। এখানে, মারকারিই একমাত্র ব্যতিক্রম।</p>",
+        },
+        {
+          id: 16,
+          question: "কোনটি সবচেয়ে কম সক্রিয় ধাতু?",
+          options: {
+            A: "Cu",
+            B: "Pb",
+            C: "Hg",
+            D: "Ag",
+          },
+          correct: "D",
+          explanation:
+            "<p>ধাতুসমূহের তড়িৎ রাসায়নিক সক্রিয়তা সিরিজে যে ধাতু যত নিচে থাকে, সেটি তত কম সক্রিয়। প্রদত্ত ধাতুগুলোর সক্রিয়তা ক্রম হলো: Pb > Cu > Hg > Ag। এই ক্রম অনুসারে, সিলভার (Ag) সবচেয়ে কম সক্রিয় ধাতু। এটি সহজে ইলেকট্রন ত্যাগ করে না এবং তাই কম রাসায়নিক বিক্রিয়ায় অংশ নেয়।</p>",
+        },
+        {
+          id: 17,
+          question: "বিজারণ বিভবের মানের ক্রম অনুসারে কোনটি সঠিক?",
+          options: {
+            A: "Na⁺ < Mg²⁺ > Al³⁺",
+            B: "Na⁺ > Mg²⁺ > Al³⁺",
+            C: "Mg²⁺ < Na⁺ > Al³⁺",
+            D: "Al³⁺ > Mg²⁺ > Na⁺",
+          },
+          correct: "D",
+          explanation:
+            "<p>ধাতুর সক্রিয়তা সিরিজে যে ধাতু যত উপরে থাকে, তার বিজারণ বিভবের মান তত কম হয়। অর্থাৎ, সে সহজে ইলেকট্রন ত্যাগ করতে পারে এবং নিজে জারিত হয়, কিন্তু তার আয়ন সহজে বিজারিত হয় না।<br>সক্রিয়তা ক্রম: Na > Mg > Al<br>সুতরাং, তাদের আয়নগুলোর বিজারণ বিভবের ক্রম হবে এর উল্টো: Al<sup>3+</sup> > Mg<sup>2+</sup> > Na<sup>+</sup>। কারণ Na সবচেয়ে সক্রিয়, এর বিজারণ বিভব সবচেয়ে কম।</p>",
+        },
+        {
+          id: 18,
+          question: "কোন আয়নটি সহজে চার্জমুক্ত হবে?",
+          options: {
+            A: "Cu²⁺",
+            B: "H⁺",
+            C: "Pb²⁺",
+            D: "Na⁺",
+          },
+          correct: "A",
+          explanation:
+            "<p>তড়িৎ বিশ্লেষণকালে ক্যাথোডে ক্যাটায়নগুলোর চার্জমুক্ত হওয়ার প্রবণতা তাদের বিজারণ বিভবের মানের উপর নির্ভর করে। যার বিজারণ বিভব যত বেশি, সেটি তত সহজে ইলেকট্রন গ্রহণ করে চার্জমুক্ত হয়। প্রদত্ত আয়নগুলোর বিজারণ বিভবের মান হলো (প্রায়):<br>Cu<sup>2+</sup> (+0.34 V)<br>H<sup>+</sup> (0.00 V)<br>Pb<sup>2+</sup> (-0.13 V)<br>Na<sup>+</sup> (-2.71 V)<br>সুতরাং, Cu<sup>2+</sup> এর বিজারণ বিভব সবচেয়ে বেশি হওয়ায় এটি সবার আগে চার্জমুক্ত হবে।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "সাধারণ তাপমাত্রায় পানি (H₂O) থেকে H₂ প্রতিস্থাপন করতে পারে কোন ধাতু?",
+          options: {
+            A: "Ca",
+            B: "Mg",
+            C: "Zn",
+            D: "Pb",
+          },
+          correct: "A",
+          explanation:
+            "<p>যেসব ধাতু সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে এবং ক্ষারীয় বা ক্ষারীয় মৃত্তিকা ধাতু, তারা সাধারণ তাপমাত্রায় পানি থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>ক্যালসিয়াম (Ca) একটি ক্ষারীয় মৃত্তিকা ধাতু এবং এটি সক্রিয়তা সিরিজে হাইড্রোজেনের অনেক উপরে অবস্থিত। এটি সাধারণ তাপমাত্রায় পানি থেকে হাইড্রোজেন প্রতিস্থাপন করে।<br>ম্যাগনেসিয়াম (Mg) গরম পানি বা স্টীম থেকে হাইড্রোজেন প্রতিস্থাপন করে। জিঙ্ক (Zn) এবং লেড (Pb) সাধারণত স্টীম থেকে হাইড্রোজেন প্রতিস্থাপন করে।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "নিচের কোন মৌলটি HCl এসিড থেকে H₂ প্রতিস্থাপন করতে পারবে না?",
+          options: {
+            A: "Co",
+            B: "Ni",
+            C: "Cu",
+            D: "Sn",
+          },
+          correct: "C",
+          explanation:
+            "<p>যেসব ধাতু সক্রিয়তা সিরিজে হাইড্রোজেনের নিচে অবস্থান করে, তারা অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে না।<br>কোবাল্ট (Co), নিকেল (Ni), এবং টিন (Sn) সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থিত, তাই তারা HCl অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>কপার (Cu) সক্রিয়তা সিরিজে হাইড্রোজেনের নিচে অবস্থিত, তাই এটি HCl অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে না।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "নিচের কোনটি অ্যানোডে জারিত হওয়ার সক্রিয়তা বৃদ্ধি ক্রম সঠিক?",
+          options: {
+            A: "OH⁻ > I⁻ > Cl⁻ > SO₄²⁻",
+            B: "I⁻ > OH⁻ > Cl⁻ > SO₄²⁻",
+            C: "Cl⁻ > I⁻ > OH⁻ > SO₄²⁻",
+            D: "SO₄²⁻ > I⁻ > Cl⁻ > OH⁻",
+          },
+          correct: "A",
+          explanation:
+            "<p>অ্যানোডে জারিত হওয়ার সক্রিয়তা অ্যানায়নগুলোর জারণ বিভবের উপর নির্ভর করে। জারণ বিভব যত বেশি হবে, জারিত হওয়ার প্রবণতা তত বেশি হবে। অ্যানায়নগুলোর জারণ প্রবণতার সঠিক ক্রম হলো:<br>OH<sup>-</sup> > I<sup>-</sup> > Br<sup>-</sup> > Cl<sup>-</sup> > SO₄<sup>2-</sup> > NO₃<sup>-</sup><br>সুতরাং, প্রদত্ত অপশনগুলোর মধ্যে, OH<sup>-</sup> > I<sup>-</sup> > Cl<sup>-</sup> > SO₄<sup>2-</sup> ক্রমটি সঠিক।</p>",
+        },
+        {
+          id: 22,
+          question: "সবচেয়ে বেশি তড়িৎ ধনাত্মক মৌল কোনটি?",
+          options: {
+            A: "Al",
+            B: "K",
+            C: "Mg",
+            D: "Ca",
+          },
+          correct: "B",
+          explanation:
+            "<p>তড়িৎ ধনাত্মকতা হলো ইলেকট্রন ত্যাগের প্রবণতা। সক্রিয়তা সিরিজে যে মৌল যত উপরে থাকে, সেটি তত বেশি তড়িৎ ধনাত্মক। প্রদত্ত মৌলগুলোর মধ্যে, পটাশিয়াম (K) সক্রিয়তা সিরিজে সবচেয়ে উপরে অবস্থিত। পটাশিয়ামের ইলেকট্রন ত্যাগের প্রবণতা অ্যালুমিনিয়াম (Al), ম্যাগনেসিয়াম (Mg) এবং ক্যালসিয়াম (Ca) এর চেয়ে বেশি। তাই, এটি সবচেয়ে বেশি তড়িৎ ধনাত্মক মৌল।</p>",
+        },
+        {
+          id: 23,
+          question: "নিচের কোন বিক্রিয়াটি সম্ভব?",
+          options: {
+            A: "2Ag⁺ + Pb → 2Ag + Pb²⁺",
+            B: "H₂ + Pb²⁺ → 2H⁺ + Pb",
+            C: "Pb + 2Ag⁺ → Pb²⁺ + 2Ag",
+            D: "2Ag + 2H⁺ → 2Ag⁺ + H₂",
+          },
+          correct: "C",
+          explanation:
+            "<p>একটি জারণ-বিজারণ বিক্রিয়া তখনই সম্ভব যখন জারিত হতে যাওয়া মৌলটি বিজারিত হতে যাওয়া মৌলের চেয়ে বেশি সক্রিয় হয়। অর্থাৎ, সক্রিয়তা সিরিজে এটি উপরে অবস্থান করবে।<br>সক্রিয়তা ক্রম: Pb > H > Ag<br>A) Pb, Ag<sup>+</sup> কে বিজারিত করতে পারে। এটি Pb<sup>2+</sup> এবং Ag তৈরি করবে। এটি সম্ভব।<br>B) H₂ দ্বারা Pb<sup>2+</sup> এর বিজারণ সম্ভব নয় কারণ H লেডের চেয়ে কম সক্রিয়।<br>C) Pb, Ag<sup>+</sup> কে বিজারিত করে Pb<sup>2+</sup> এবং Ag তৈরি করে। এটি সম্ভব।<br>D) Ag দ্বারা H<sup>+</sup> এর বিজারণ সম্ভব নয় কারণ Ag হাইড্রোজেনের চেয়ে কম সক্রিয়।<br>সুতরাং, (C) বিকল্পটি সঠিক।</p>",
+        },
+        {
+          id: 24,
+          question:
+            "কোন লবণ গাঢ় সালফিউরিক এসিডের সাথে বিক্রিয়া করে সালফার তৈরি করে?",
+          options: {
+            A: "NaF",
+            B: "NaCl",
+            C: "NaBr",
+            D: "NaI",
+          },
+          correct: "D",
+          explanation:
+            "<p>গাঢ় সালফিউরিক অ্যাসিড একটি জারক পদার্থ। এটি হ্যালোজেন অ্যাসিডের সাথে বিক্রিয়া করে হ্যালোজেনকে জারিত করতে পারে।<br>ফ্লোরাইড (F<sup>-</sup>) এবং ক্লোরাইড (Cl<sup>-</sup>) আয়নগুলি দুর্বল বিজারক, তাই গাঢ় H₂SO₄ তাদের জারিত করতে পারে না।<br>ব্রোমাইড (Br<sup>-</sup>) আয়নকে H₂SO₄ জারিত করে Br₂ তৈরি করে।<br>আয়োডাইড (I<sup>-</sup>) আয়ন একটি শক্তিশালী বিজারক। গাঢ় H₂SO₄ দ্বারা আয়োডাইড আয়ন জারিত হলে এটি আয়োডিন (I₂) এবং সালফার (S) উভয়ই উৎপন্ন করে।<br>2NaI + 2H₂SO₄ (গাঢ়) → I₂ + SO₂ + Na₂SO₄ + 2H₂O<br>8NaI + 5H₂SO₄ (গাঢ়) → 4I₂ + H₂S + 4Na₂SO₄ + 4H₂O (অতিরিক্ত বিজারিত হলে H₂S ও তৈরি হতে পারে, যা সালফারের উপস্থিতিকে ইঙ্গিত করে)</p>",
+        },
+        {
+          id: 25,
+          question: "HCl এর সাথে কোনটির বিক্রিয়া বিপদজনক?",
+          options: {
+            A: "Na",
+            B: "Ca",
+            C: "Fe",
+            D: "Zn",
+          },
+          correct: "A",
+          explanation:
+            "<p>সোডিয়াম (Na) একটি অত্যন্ত সক্রিয় ক্ষার ধাতু। এটি HCl এর মতো শক্তিশালী অ্যাসিডের সাথে খুব দ্রুত এবং তীব্রভাবে বিক্রিয়া করে প্রচুর তাপ এবং হাইড্রোজেন গ্যাস উৎপন্ন করে। এই বিক্রিয়াটি এতটাই তাপউৎপাদী যে উৎপন্ন হাইড্রোজেন গ্যাস প্রজ্বলিত হতে পারে, যা বিপদজনক পরিস্থিতি সৃষ্টি করে। অন্যান্য ধাতু যেমন ক্যালসিয়াম, লোহা এবং জিঙ্কও HCl এর সাথে বিক্রিয়া করে, তবে সোডিয়ামের মতো এত তীব্রভাবে নয়।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "নিচের কোন তড়িৎ-দ্বারটির উপাদান সবচেয়ে সহজে ইলেকট্রন ত্যাগ করতে পারে?",
+          options: {
+            A: "Zn",
+            B: "Hg",
+            C: "Cu",
+            D: "Pb",
+          },
+          correct: "A",
+          explanation:
+            "<p>কোনো তড়িৎ-দ্বারের উপাদান যত সহজে ইলেকট্রন ত্যাগ করতে পারে, তার জারণ প্রবণতা তত বেশি হয়। তড়িৎ রাসায়নিক সক্রিয়তা সিরিজে যে ধাতু যত উপরে থাকে, তার জারণ প্রবণতা তত বেশি। প্রদত্ত ধাতুগুলোর সক্রিয়তা ক্রম হলো: Zn > Pb > Cu > Hg।<br>সুতরাং, জিঙ্ক (Zn) এর জারণ প্রবণতা সবচেয়ে বেশি, অর্থাৎ এটি সবচেয়ে সহজে ইলেকট্রন ত্যাগ করতে পারে।</p>",
+        },
+        {
+          id: 27,
+          question:
+            "Li, Na, Zn ও Cu এর প্রমাণ জারণ বিভব যথাক্রমে +3.04V, +2.71V, +0.76V ও -0.34V হলে তড়িৎ বিশ্লেষণের সময় কোন আয়নটি সর্বপ্রথম চার্জমুক্ত হবে?",
+          options: {
+            A: "Li⁺",
+            B: "Zn²⁺",
+            C: "Na⁺",
+            D: "Cu²⁺",
+          },
+          correct: "D",
+          explanation:
+            "<p>তড়িৎ বিশ্লেষণের সময় ক্যাথোডে ক্যাটায়নগুলো চার্জমুক্ত হয়। যে আয়নের বিজারণ বিভব (জারণ বিভবের বিপরীত) সবচেয়ে বেশি হবে, সেটি আগে চার্জমুক্ত হবে।<br>প্রমাণ জারণ বিভব:<br>Li: +3.04 V ⇒ Li⁺ এর বিজারণ বিভব: -3.04 V<br>Na: +2.71 V ⇒ Na⁺ এর বিজারণ বিভব: -2.71 V<br>Zn: +0.76 V ⇒ Zn²⁺ এর বিজারণ বিভব: -0.76 V<br>Cu: -0.34 V ⇒ Cu²⁺ এর বিজারণ বিভব: +0.34 V<br>বিজারণ বিভবের ক্রম: Cu²⁺ (+0.34 V) > Zn²⁺ (-0.76 V) > Na⁺ (-2.71 V) > Li⁺ (-3.04 V)<br>সুতরাং, Cu<sup>2+</sup> এর বিজারণ বিভব সবচেয়ে বেশি হওয়ায় এটি সর্বপ্রথম চার্জমুক্ত হবে।</p>",
+        },
+        {
+          id: 28,
+          question:
+            "নিচের কোন মৌলটি HCl এসিড থেকে H₂ কে প্রতিস্থাপন করতে পারে?",
+          options: {
+            A: "Cu",
+            B: "Sn",
+            C: "Hg",
+            D: "Ag",
+          },
+          correct: "B",
+          explanation:
+            "<p>যেসব ধাতু সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থান করে, তারা অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>কপার (Cu), মারকারি (Hg) এবং সিলভার (Ag) সক্রিয়তা সিরিজে হাইড্রোজেনের নিচে অবস্থিত, তাই তারা HCl অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে না।<br>টিন (Sn) সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থিত, তাই এটি HCl অ্যাসিড থেকে হাইড্রোজেন প্রতিস্থাপন করতে পারে।<br>বিক্রিয়া: Sn(s) + 2HCl(aq) → SnCl₂(aq) + H₂(g)</p>",
+        },
+        {
+          id: 29,
+          question: "নিচের কোনটি লঘু H₂SO₄ হতে হাইড্রোজেন বিমুক্ত করতে পারে?",
+          options: {
+            A: "Pb",
+            B: "Hg",
+            C: "Cu",
+            D: "Ca",
+          },
+          correct: "D",
+          explanation:
+            "<p>যেসব ধাতু সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে অবস্থিত, তারা অ্যাসিড থেকে হাইড্রোজেন বিমুক্ত করতে পারে।<br>লেড (Pb) সক্রিয়তা সিরিজে হাইড্রোজেনের উপরে আছে এবং লঘু H₂SO₄ থেকে হাইড্রোজেন বিমুক্ত করতে পারে।<br>মারকারি (Hg) এবং কপার (Cu) সক্রিয়তা সিরিজে হাইড্রোজেনের নিচে অবস্থিত, তাই তারা লঘু H₂SO₄ থেকে হাইড্রোজেন বিমুক্ত করতে পারে না।<br>ক্যালসিয়াম (Ca) একটি অত্যন্ত সক্রিয় ধাতু এবং সক্রিয়তা সিরিজে হাইড্রোজেনের অনেক উপরে অবস্থিত। এটি লঘু H₂SO₄ এর সাথে তীব্রভাবে বিক্রিয়া করে হাইড্রোজেন বিমুক্ত করে। তাই ক্যালসিয়াম সবচেয়ে কার্যকরভাবে হাইড্রোজেন বিমুক্ত করতে পারে।</p>",
+        },
+        {
+          id: 30,
+          question:
+            "কোন ধাতু স্বল্পতম সময়ে লঘু HCl এর সাথে বিক্রিয়া করে H₂ গ্যাস উৎপন্ন করে?",
+          options: {
+            A: "Na",
+            B: "K",
+            C: "Zn",
+            D: "Pb",
+          },
+          correct: "B",
+          explanation:
+            "<p>ধাতুসমূহের সক্রিয়তা যত বেশি হয়, লঘু অ্যাসিডের সাথে তাদের বিক্রিয়ার হার তত বেশি হয়। সক্রিয়তা সিরিজে যে ধাতু যত উপরে থাকে, সে তত দ্রুত হাইড্রোজেন গ্যাস উৎপন্ন করে।<br>সক্রিয়তা ক্রম: K > Na > Zn > Pb<br>পটাশিয়াম (K) প্রদত্ত ধাতুগুলোর মধ্যে সবচেয়ে সক্রিয়। তাই এটি লঘু HCl এর সাথে স্বল্পতম সময়ে এবং অত্যন্ত তীব্রভাবে বিক্রিয়া করে হাইড্রোজেন গ্যাস উৎপন্ন করে।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                <label class="option" data-option="${option}">
+                                                                  <div class="circle">${option}</div>
+                                                                  <span class="option-text">${question.options[option]}</span>
+                                                                </label>
+                                                              `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                   <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                   <div class="explanation-content">
+                                                                     <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                     ${question.explanation}
+                                                                   </div>
+                                                                 </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                              <p class="question-label">${
+                                                                index + 1
+                                                              }. ${
+            question.question
+          }</p>
+                                                              <div class="options">
+                                                                ${optionsHTML}
+                                                              </div>
+                                                              ${explanationHTML}
+                                                            `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
